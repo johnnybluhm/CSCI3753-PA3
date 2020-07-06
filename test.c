@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1000
 int main(int argc, char *argv[]){
@@ -28,10 +29,6 @@ int main(int argc, char *argv[]){
 	FILE *fPtr;
 
 	fPtr = fopen(inputFiles[0], "r");
-	printf("input vlaues are:\n");
-	printf("%s\n", inputFiles[0]);
-	printf("%s\n", inputFiles[1]);
-	printf("NOW WE HERE");
 	
 	    /* fopen() return NULL if last operation was unsuccessful */
     if(fPtr == NULL)
