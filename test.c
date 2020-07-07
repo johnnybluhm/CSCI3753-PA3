@@ -29,6 +29,11 @@ int main(int argc, char *argv[]){
         fputs("", serviced);
         fclose(serviced);
 
+            //clear results file for each run
+        results= fopen("results.txt", "w");
+        fputs("", results);
+        fclose(results);
+
 	int num_requesters = atoi(argv[1]);
 	int num_resolvers = atoi(argv[2]);
 	char *requester_log= argv[3];
@@ -234,6 +239,7 @@ void *resolverFunction(void *file){
         printf("in resolver critical section\n");
 
         ip_add = shared_array[out];
+        printf("%s\n", ip_add );
         out = (out+1)%BUFFER_SIZE;
 
         /*
@@ -242,10 +248,11 @@ void *resolverFunction(void *file){
         */
        pthread_mutex_unlock(&lock); 
 
-       char *ip_num;
+       char *ip_num = malloc(50);
 
-       dnslookup(ip_add, ip_num,1000);
+       dnslookup(ip_add, ip_num,50);
 
+       printf("%s\n",ip_num );
 
         pthread_mutex_lock(&results_lock); 
 
