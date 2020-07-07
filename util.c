@@ -12,13 +12,10 @@
  *  
  */
 #include <stdio.h>
-//#include "util.h"
+#include "util.h"
 
 int main(int argc, char *argv[]){
 
-	num_request = argv[1];
-
-	printf("%d \n",num_request);
 }
 
 int dnslookup(const char* hostname, char* firstIPstr, int maxSize){
