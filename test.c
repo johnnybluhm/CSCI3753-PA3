@@ -10,7 +10,21 @@ void *requesterFunction( void *ptr );
 
 char shared_array[NUMBER_OF_STRINGS][STRING_LENGTH+1];
 
+int in = 0;
+int out= 0;
+pthread_mutex_t lock; 
+
+FILE *serviced;
+FILE *results;
+
 int main(int argc, char *argv[]){
+
+   // how to handle how many threafs to make: pthread_t reqtid[2];
+
+    //clear serviced file for each run
+        serviced = fopen("serviced.txt", "w");
+        fputs("", serviced);
+        fclose(serviced);
 
 	int num_requesters = atoi(argv[1]);
 	int num_resolvers = atoi(argv[2]);
@@ -29,6 +43,25 @@ int main(int argc, char *argv[]){
     int totalRead = 0;
 
 	
+    //initialize lock
+
+        if (pthread_mutex_init(&lock, NULL) != 0) { 
+        printf("\n mutex init has failed\n"); 
+        return 1; 
+    } 
+
+    pthread_t reqtid[num_requesters];
+    pthread_t restid[num_resolvers];
+
+    //create requester threads
+
+       for(int i = 0; i < num_requesters; i++) {
+        pthread_create(&reqtid[i], NULL, requesterFunction, (void *)inputFiles[i]);
+    }
+
+    for(int i = 0; i < num_requesters; i++) {
+        pthread_join(reqtid[i], NULL);
+    }
 
 	// FILE *fPtr;
 
@@ -73,18 +106,19 @@ int main(int argc, char *argv[]){
  //    fclose(fPtr);
 
 
-   pthread_t thread1, thread2;
+  /* pthread_t thread1, thread2;
     int iret1,iret2;
     printf("before creation\n");
     iret1 = pthread_create(&thread1, NULL, requesterFunction, (void*)inputFiles[0]);
     pthread_join( thread1, NULL);
     iret2 = pthread_create(&thread2, NULL, requesterFunction, (void*)inputFiles[1]);
     pthread_join( thread2, NULL); 
-
+    pthread_mutex_destroy(&lock); 
+*/
     printf("VALUES AFTER THREADS\n");
 
     for(i =0;i< sizeof(shared_array)/sizeof(shared_array[i]);i++){
-        printf("%s\n",shared_array[i] );
+        printf("value at location %d is %s\n", i, shared_array[i]);
         
     }
     
@@ -104,9 +138,11 @@ int main(int argc, char *argv[]){
 void *requesterFunction(void *file){
 
     FILE *fPtr;
-    printf("thread is in function\n");
+    printf("thread is in requester function\n");
     char *file_name = file;
 
+
+    //parses file and adds lines to shared_array one by one
 
     char buffer[BUFFER_SIZE];
     int totalRead = 0;
@@ -127,7 +163,7 @@ void *requesterFunction(void *file){
 
 
     /* Repeat this until read line is not NULL */
-    int i =0;
+    
     while(fgets(buffer, BUFFER_SIZE, fPtr) != NULL) 
     {
         /* Total character read count */
@@ -141,13 +177,29 @@ void *requesterFunction(void *file){
                                     ? '\0' 
                                     : buffer[totalRead - 1];
 
+       /* Print line read on cosole*/
 
-        /* Print line read on cosole*/
-        printf("%s\n", buffer);
-        printf("value of i is %d\n",i );
-        strcpy(shared_array[i], buffer);
-        printf("length of shared array is %d\n",sizeof(shared_array)/sizeof(shared_array[i]));
-        i++;
+       
+        pthread_mutex_lock(&lock); 
+        /*CRITICAL SECTION
+----------------------------------------------------------------------------------------------------
+        */
+        printf("in critical section\n");
+        strcpy(shared_array[in], buffer);
+        in= (in +1)%NUMBER_OF_STRINGS;
+        printf("%s\n",buffer );
+        printf("%d\n",in );
+        serviced = fopen("serviced.txt", "a");
+        fputs(buffer, serviced);
+        fputs("\n", serviced);
+        fclose(serviced);
+
+        /*
+        END CRITICAL SECTION
+-----------------------------------------------------------------------------------------
+        */
+       pthread_mutex_unlock(&lock); 
+        
 
 
     } 
