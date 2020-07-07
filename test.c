@@ -4,6 +4,8 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE 1000
+
+
 int main(int argc, char *argv[]){
 
 	int num_requests = atoi(argv[1]);
@@ -68,9 +70,4 @@ int main(int argc, char *argv[]){
     /* Done with this file, close file to release resource */
     fclose(fPtr);
 
-	
-	printf("%d \n",num_requests);
-	printf("%d \n",num_resolvers);
-	printf("%s \n",requester_log);
-	printf("%s \n",resolver_log);
 }
