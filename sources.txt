@@ -1,3 +1,13 @@
 https://shivammitra.com/c/producer-consumer-problem-in-c/# 
 
 https://www.geeksforgeeks.org/mutex-lock-for-linux-thread-synchronization/
+
+
+shared buffer
+malloc necessary?
+requester thread handles only one file?
+files typed in when running purpose?
+how to loop 
+open file in main
+open all files in main
+make everything malloc to put data on the heap. 
