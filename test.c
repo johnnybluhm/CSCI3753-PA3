@@ -10,12 +10,13 @@
 #define STRING_LENGTH 1025
 void *requesterThread( void *file);
 void *resolverThread(void *file);
-	char shared_array[NUMBER_OF_STRINGS][STRING_LENGTH+1];
 
 struct Thread_object{
 
 	int* in;
 	int* out;
+	int* num_files;
+	int* file_tracker;
 	pthread_mutex_t* buffer_lock; 
 	pthread_mutex_t* results_file_lock; 
 	pthread_mutex_t* serviced_file_lock;
@@ -36,16 +37,17 @@ int main(int argc, char *argv[]){
 	pthread_mutex_t* file_array_lock= malloc(sizeof(pthread_mutex_t));
 	int *in = malloc(4);
 	int *out = malloc(4);
-	sem_t* producer = malloc(sizeof(sem_t));
-	sem_t* consumer= malloc(sizeof(sem_t));
+	int *num_files = malloc(4);
+	int *file_tracker = malloc(4);
 	FILE *serviced;
 	FILE *results;
-	char shared_array[NUMBER_OF_STRINGS][STRING_LENGTH+1];
+	*in=0;
+	*out=0;
+	//char shared_array[NUMBER_OF_STRINGS][STRING_LENGTH+1];
 
-	//Char * shared_array = (char *) malloc(NUMBER_STRINGS * STRING_LENGTH * sizeof(char))
+//	char * shared_array = (char *) malloc(NUMBER_STRINGS * STRING_LENGTH * sizeof(char))
 
-
-
+	*file_tracker = 0;
 
 	//ascii to integer
 	int num_requesters = atoi(argv[1]);
@@ -67,10 +69,12 @@ int main(int argc, char *argv[]){
 	//open serviced file to be passed to threads
 		serviced = fopen(requester_log, "a");
 
+		if(serviced == NULL){
+			printf("BROKEN\n");
+		}
+
 	//open results file to be passed to threads
-		results = fopen(resolver_log, "a");
-
-
+		results = fopen(resolver_log, "a");		
 
 	//get array of file names
 	char *inputFiles[argc - 5];
@@ -81,167 +85,172 @@ int main(int argc, char *argv[]){
 		int num = i-5;
 	}
 
-	int inputFiles_len;
-	FILE* file_array[inputFiles_len];	
-	inputFiles_len = sizeof(inputFiles)/sizeof(inputFiles[0]); 
-
-	//fill array with file pointers instead of file names
-	for(int i=0;i<inputFiles_len;i++){
-		FILE* input_file;
-		printf("%s\n", inputFiles[i]);
-		input_file= fopen(inputFiles[i], "r");
-		file_array[i] = input_file;
-
-	}
-
-	//test code
-
-
-
-
-	
 	//initialize buffer_lock
-	if (pthread_mutex_init(&buffer_lock, NULL) != 0) { 
+	if (pthread_mutex_init(buffer_lock, NULL) != 0) { 
 		printf("\n mutex init has failed\n"); 
 		return 1; 
 	} 
 
 	//initialize results file lock
-	if (pthread_mutex_init(&results_file_lock, NULL) != 0) { 
+	if (pthread_mutex_init(results_file_lock, NULL) != 0) { 
 		printf("\n mutex init has failed\n"); 
 		return 1; 
 	} 
 	//initialize serviced file lock
-	if (pthread_mutex_init(&serviced_file_lock, NULL) != 0) { 
+	if (pthread_mutex_init(serviced_file_lock, NULL) != 0) { 
 		printf("\n mutex init has failed\n"); 
 		return 1; 
 	} 
 		//initialize file array lock
-	if (pthread_mutex_init(&file_array_lock, NULL) != 0) { 
+	if (pthread_mutex_init(file_array_lock, NULL) != 0) { 
 		printf("\n mutex init has failed\n"); 
 		return 1; 
 	} 
-
-	//initialize producer semaphore
-	sem_init(&producer, 0, NUMBER_OF_STRINGS);
-
-	//initialize consumer
-	sem_init(&consumer,0,0);
-
+	int test;
+	
 	//initialize threads
 	pthread_t reqtid[num_requesters];
 	pthread_t restid[num_resolvers];
 
 	//instaniate thread object
-	//instaniate thread object
-
 	struct Thread_object thread_object;
 
 	thread_object.buffer_lock = buffer_lock;	
 	thread_object.results_file_lock = results_file_lock;
 	thread_object.serviced_file_lock= serviced_file_lock;
-	thread_object.producer= producer;
-	thread_object.consumer = consumer;
+	thread_object.producer = malloc(sizeof(sem_t));
+	thread_object.consumer = malloc(sizeof(sem_t));
+
+
 	thread_object.serviced = serviced;
 	thread_object.results = results;
 	thread_object.in = in;
 	thread_object.out = out;
-	strcpy("fuck", thread_object.shared_array[0]);
+	thread_object.file_tracker =file_tracker;
+	thread_object.file_array_lock= file_array_lock;
 
-	printf("%s\n", thread_object.shared_array[0]);
+	//initialize producer semaphore
+	sem_init(thread_object.producer, 0, NUMBER_OF_STRINGS);
+	
+	//initialize consumer
+	sem_init(thread_object.consumer,0,0);
 
-	// //create array of strings in thread object
-	// for (i = 0; i < sizeof(inputFiles)/sizeof(inputFiles[i]); i++){
-	// 		strcpy(thread_object.inputFiles[i], inputFiles[i]);
+	int inputFiles_len;
+	FILE* file_array[inputFiles_len];	
+	inputFiles_len = sizeof(inputFiles)/sizeof(inputFiles[0]); 
 
-	// }//for 
+	*num_files = inputFiles_len;
 
-	// //spawn requester threads
-	// for(int i = 0; i < num_requesters; i++) {
-	// 	pthread_create(&reqtid[i], NULL, requesterThread, (void *)&thread_object);
+	thread_object.num_files= num_files;
 
-	// }
+	//fill struct file_array with file pointers 
+	for(int i=0;i<inputFiles_len;i++){
+		FILE* input_file;
+		printf("%s\n", inputFiles[i]);
+		input_file= fopen(inputFiles[i], "r");
+		thread_object.file_array[i] = input_file;
 
-	// //spawn resolver threads
-	// for(int i = 0; i < num_resolvers; i++) {
-	// 	pthread_create(&restid[i], NULL, resolverThread, (void *)&thread_object);
-	// }   
+	}
 
-	// //wait for resolver threads
-	// for(int i = 0; i < num_resolvers; i++) {
-	// 	pthread_join(restid[i], NULL);
-	// }
-
-	// //wait for requester threads
-	// for(int i = 0; i < num_requesters; i++) {
-	// 	pthread_join(reqtid[i], NULL);
-	// }
+	/*fprintf(serviced, "TESTINg"); 
+	fprintf(thread_object.serviced, "HELLO"); */
 
 
+	//spawn requester threads
+	for(int i = 0; i < num_requesters; i++) {
+		pthread_create(&reqtid[i], NULL, requesterThread, (void *)&thread_object);
+
+	}
+
+	//spawn resolver threads
+	for(int i = 0; i < num_resolvers; i++) {
+		pthread_create(&restid[i], NULL, resolverThread, (void *)&thread_object);
+	}   
+
+	//wait for resolver threads
+	for(int i = 0; i < num_resolvers; i++) {
+		pthread_join(restid[i], NULL);
+	}
+
+	//wait for requester threads
+	for(int i = 0; i < num_requesters; i++) {
+		pthread_join(reqtid[i], NULL);
+	}
 
 }//main
 
 void *requesterThread(void *arg){
 
+	printf("Entered requester thread\n");
+
 	struct Thread_object *thread_object;
 
 	thread_object = arg;
-
-	
-
 	FILE *fPtr;
-	printf("thread is in requester function\n");
-	char *file_name;
 
+		//if file_tracker == num_files, we have processed all files.
 
-	//get file to proces
-
-
-	/*pthread_mutex_lock(&thread_object->file_array_lock);
-
-	for (int i = 0; i < sizeof(thread_object->inputFiles)/sizeof(thread_object->inputFiles[i]); i++)
-	{		
-		if(strcmp(thread_object->inputFiles[i],"taken")==0){
-			printf("core dump");
-		}
-		else{
-			file_name= thread_object->inputFiles[i];
-			strcpy("taken",thread_object->inputFiles[i]);
-			printf("core dump2");
-			break;
-		}
-
-	}//for 
-
-	pthread_mutex_unlock(&thread_object->file_array_lock);*/
-	
-	file_name = thread_object->inputFiles[0];
-	printf("%s\n", file_name);
-
-	//parses file and adds lines to shared_array one by one
-
-	char buffer[BUFFER_SIZE];
+	char buffer[STRING_LENGTH+1];
+	int files_processed;
 	int totalRead = 0;
-	fPtr = fopen(file_name, "r");
+	files_processed=0;
+
+	while(1){
+
+	//-----------------CRITICAL SECTION-----------------
 	
-		/* fopen() return NULL if last operation was unsuccessful */
-	if(fPtr == NULL)
-	{
-		/* Unable to open file hence exit */
-		printf("Unable to open file.\n");
-		printf("Please check whether file exists and you have read privilege.\n");
-		exit(EXIT_FAILURE);
-	}
+	pthread_mutex_lock(thread_object->file_array_lock);
+	//if files availbale
+	
+	if(*thread_object->file_tracker == *thread_object->num_files){
+		printf("Thread %u serviced %d file(s)\n", pthread_self(), files_processed); 
+		
+		// release lock and exit. There are no more files to process. 
+		pthread_mutex_unlock(thread_object->file_array_lock);
 
 
-	/* File open success message */
-	printf("File opened successfully. Reading file contents line by line. \n\n");
+		pthread_mutex_lock(thread_object->serviced_file_lock);
+			/*CRITICAL SECTION
+----------------------------------------tid------------------------------------------------------------
+		*/
+		
+		fprintf(thread_object->serviced, "Thread %u serviced %d files\n", pthread_self(), files_processed); 
+		// fputs("Thread ",thread_object->results);
+		// printf("SEG\n");
+	 //   fputs(pthread_self(),thread_object->results);
+	 //   printf("SEG\n");
+	 //   fputs("serviced ",thread_object->serviced);
+	 //   fputs(files_processed,thread_object->serviced);
+	 //   fputs("files \n",thread_object->serviced);
+		// fclose(thread_object->serviced);
+		/*
+		END CRITICAL SECTION
+-----------------------------------------------------------------------------------------
+		*/
+		pthread_mutex_unlock(thread_object->serviced_file_lock);
+		printf("Thread exited normally\n");
+		pthread_exit(NULL);
+
+	}//if
+	else{
+		//do something
+		//increment file_tracker by one to show file was removed
+		//still locked so do not need to lock
+		int file_num;
+
+		file_num = *thread_object->file_tracker;
+		*thread_object->file_tracker = *thread_object->file_tracker + 1;
+		fPtr = thread_object->file_array[file_num];
+		pthread_mutex_unlock(thread_object->file_array_lock);
 
 
-	/* Repeat this until read line is not NULL */
-	while(fgets(buffer, BUFFER_SIZE, fPtr) != NULL) 
-	{
-		/* Total character read count */
+		//----------------END CRITICAL SECTION --------------------
+
+		// reads text until newline is encountered and puts in website
+		//loops until EOF is reached
+		while(fgets(buffer, BUFFER_SIZE, fPtr) != NULL){
+
+			/* Total character read count */
 		totalRead = strlen(buffer);
 		/*
 		 * Trim new line character from last if exists.
@@ -251,115 +260,99 @@ void *requesterThread(void *arg){
 									: buffer[totalRead - 1];
 
 
-	   	sem_wait(&thread_object->producer);
-		pthread_mutex_lock(&thread_object->buffer_lock); 
+		sem_wait(thread_object->producer);
+		
+		pthread_mutex_lock(thread_object->buffer_lock);
 		/*CRITICAL SECTION
 ----------------------------------------------------------------------------------------------------
 		*/
-		printf("in requester critical section\n");
-		strcpy(shared_array[*thread_object->in], buffer);
+		//printf("Requester accessing shared array\n");
+		strcpy(thread_object->shared_array[*thread_object->in], buffer);
+
 		*thread_object->in= (*thread_object->in +1)%NUMBER_OF_STRINGS;
+		//printf("%s\n",buffer);
 		/*
 		END CRITICAL SECTION
 -----------------------------------------------------------------------------------------
 		*/
-	   pthread_mutex_unlock(&thread_object->buffer_lock);  
-	   sem_post(&thread_object->consumer);
-	}//while
+		pthread_mutex_unlock(thread_object->buffer_lock);  
+		sem_post(thread_object->consumer);
 
-	/* Done with this file, close file to release resource */
-	fclose(fPtr);
+		}//while
 
-	pthread_mutex_lock(&thread_object->serviced_file_lock);
-			/*CRITICAL SECTION
-----------------------------------------tid------------------------------------------------------------
-		*/
-		thread_object->serviced = fopen("serviced.txt", "a");
-		fprintf(thread_object->serviced, "Thread %u serviced 1 file\n", pthread_self()); 
-		fclose(thread_object->serviced);
-		/*
-		END CRITICAL SECTION
------------------------------------------------------------------------------------------
-		*/
-	pthread_mutex_unlock(&thread_object->serviced_file_lock);
+		printf("Processed file\n");
+		/* Done with this file, close file to release resource */
+		fclose(fPtr);
+		files_processed++;
+
+	}//else
+
+}//big loop
 
 }//requesterThread
 
 
-void *resolverThread(void *arg){
+void *resolverThread(void *arg){	
 
-	//loop until requester threads are done and buffer is empty
+	printf("Entered resolver thread\n");
 
 	struct Thread_object *thread_object;
 
-	thread_object = arg;
+	thread_object = arg;	
 
+	//if file_tracker == num_files, we have processed all files.
 
+	while(1){
+
+	pthread_mutex_lock(thread_object->file_array_lock);
+	//-----------------CRITICAL SECTION-----------------	
+	
+	//loop until requester threads are done and buffer is empty
 
 	
-	FILE *fPtr;
-	printf("thread is in requester function\n");
-	char *file_name = thread_object->inputFiles[0];
-
-
-	//parses file and adds lines to shared_array one by one
-
-	char buffer[BUFFER_SIZE];
-	int totalRead = 0;
-	fPtr = fopen(file_name, "r");
+	if((*thread_object->file_tracker == *thread_object->num_files)&& strcmp(thread_object->shared_array[*thread_object->out],"")==0){
+		
+		// release lock and exit. There are no more websites to get
+		pthread_mutex_unlock(thread_object->file_array_lock);
 	
-		/* fopen() return NULL if last operation was unsuccessful */
-	if(fPtr == NULL)
-	{
-		/* Unable to open file hence exit */
-		printf("Unable to open file.\n");
-		printf("Please check whether file exists and you have read privilege.\n");
-		//exit(EXIT_FAILURE);
-	}
+		pthread_exit(NULL);
 
+	}//if
+	else{
 
-	/* File open success message */
-	printf("File opened successfully. Reading file contents line by line. \n\n");
-
-
-	/* Repeat this until read line is not NULL */
+		pthread_mutex_unlock(thread_object->file_array_lock);
 	
-	while(fgets(buffer, BUFFER_SIZE, fPtr) != NULL) 
-	{
-
-		char* ip_add;
-		printf("thread is in resolver function\n");
-		sem_wait(&thread_object->consumer);
-		pthread_mutex_lock(&thread_object->buffer_lock); 
+		char ip_add[50];
+		sem_wait(thread_object->consumer);
+		pthread_mutex_lock(thread_object->buffer_lock); 
 		/*CRITICAL SECTION
 ----------------------------------------------------------------------------------------------------
 		*/
-		printf("in resolver critical section\n");
+		printf("Resolver accessing shared array\n");
+		strcpy(ip_add, thread_object->shared_array[*thread_object->out]);		
+		
+		strcpy(thread_object->shared_array[*thread_object->out],"");
 
-		ip_add = shared_array[*thread_object->out];
-		printf("%s\n", ip_add );
-		*thread_object->out = (*thread_object->out+1)%NUMBER_OF_STRINGS;
+		*thread_object->out =(*thread_object->out+1)%NUMBER_OF_STRINGS;
 
 		/*
 		END CRITICAL SECTION
 -----------------------------------------------------------------------------------------
 		*/
-	   pthread_mutex_unlock(&thread_object->buffer_lock); 
-	   sem_post(&thread_object->producer);
 
-	   char *ip_num = malloc(50);
-
-	   int dns_ret = dnslookup(ip_add, ip_num,50);
-
-	   pthread_mutex_lock(&thread_object->results_file_lock); 
+	  	pthread_mutex_unlock(thread_object->buffer_lock); 
+	  	
+	  	sem_post(thread_object->producer);	  
+	  	
+	  	char *ip_num = malloc(50);
+	   	int dns_ret = dnslookup(ip_add, ip_num,50);
+	   	
+	   	pthread_mutex_lock(thread_object->results_file_lock); 
 	   
 				/*CRITICAL SECTION
 ----------------------------------------------------------------------------------------------------
 		*/
 	 
-	   printf("Trying to write to results critical section\n");
-	   thread_object->results= fopen("results.txt", "a");
-	   printf("%d\n",dns_ret );
 	   if(dns_ret == -1){
 	   fputs(ip_add,thread_object->results);
 	   fputs(",",thread_object->results);
@@ -377,14 +370,13 @@ void *resolverThread(void *arg){
 		END CRITICAL SECTION
 -----------------------------------------------------------------------------------------
 		*/
-		pthread_mutex_unlock(&thread_object->results_file_lock); 
+		pthread_mutex_unlock(thread_object->results_file_lock); 
 
-
+}//else
+	
 }//while
-/* Done with this file, close file to release resource */
-	fclose(fPtr);
 
-	pthread_exit(NULL);
+pthread_exit(NULL);
 }//resolverthread
 
 int dnslookup(const char* hostname, char* firstIPstr, int maxSize){
