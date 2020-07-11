@@ -77,10 +77,6 @@ int main(int argc, char *argv[]){
 	//open serviced file to be passed to threads
 		serviced = fopen(requester_log, "a");
 
-		if(serviced == NULL){
-			printf("BROKEN\n");
-		}
-
 	//open results file to be passed to threads
 		results = fopen(resolver_log, "a");		
 
@@ -90,7 +86,7 @@ int main(int argc, char *argv[]){
 	for (i = 5; i < argc; i++)
 	{
 		inputFiles[i-5] = argv[i];
-		int num = i-5;
+		
 	}
 
 	//initialize buffer_lock
@@ -114,7 +110,6 @@ int main(int argc, char *argv[]){
 		printf("\n mutex init has failed\n"); 
 		return 1; 
 	} 
-	int test;
 	
 	//initialize threads
 	pthread_t reqtid[num_requesters];
@@ -144,7 +139,6 @@ int main(int argc, char *argv[]){
 	sem_init(thread_object.consumer,0,0);
 
 	int inputFiles_len;
-	FILE* file_array[inputFiles_len];	
 	inputFiles_len = sizeof(inputFiles)/sizeof(inputFiles[0]); 
 
 	*num_files = inputFiles_len;
@@ -185,16 +179,26 @@ int main(int argc, char *argv[]){
 		pthread_join(reqtid[i], NULL);
 	}
 
+	//time code
 	gettimeofday(&end, NULL);
-  printf("Time taken : %ld micro seconds\n",
+ 	printf("Time taken : %ld micro seconds\n",
     ((end.tv_sec * 1000000 + end.tv_usec) -
     (start.tv_sec * 1000000 + start.tv_usec)));
-
     printf("Time taken : %ld seconds\n",
     (end.tv_sec -
     (start.tv_sec)));
 
-
+    //free memory
+	free(buffer_lock);
+	free(results_file_lock);
+	free(serviced_file_lock);
+	free(file_array_lock);
+	free(in);
+	free(out);
+	free(num_files);
+	free(file_tracker);
+	free(thread_object.producer);
+	free(thread_object.consumer);
 
 }//main
 
@@ -222,7 +226,7 @@ void *requesterThread(void *arg){
 	//if files availbale
 	
 	if(*thread_object->file_tracker == *thread_object->num_files){
-		printf("Thread %u serviced %d file(s)\n", pthread_self(), files_processed); 
+		printf("Thread %lu serviced %d file(s)\n", pthread_self(), files_processed); 
 		
 		// release lock and exit. There are no more files to process. 
 		pthread_mutex_unlock(thread_object->file_array_lock);
@@ -231,17 +235,8 @@ void *requesterThread(void *arg){
 		pthread_mutex_lock(thread_object->serviced_file_lock);
 			/*CRITICAL SECTION
 ----------------------------------------tid------------------------------------------------------------
-		*/
-		
-		fprintf(thread_object->serviced, "Thread %u serviced %d files\n", pthread_self(), files_processed); 
-		// fputs("Thread ",thread_object->results);
-		// printf("SEG\n");
-	 //   fputs(pthread_self(),thread_object->results);
-	 //   printf("SEG\n");
-	 //   fputs("serviced ",thread_object->serviced);
-	 //   fputs(files_processed,thread_object->serviced);
-	 //   fputs("files \n",thread_object->serviced);
-		// fclose(thread_object->serviced);
+		*/		
+		fprintf(thread_object->serviced, "Thread %lu serviced %d files\n", pthread_self(), files_processed); 
 		/*
 		END CRITICAL SECTION
 -----------------------------------------------------------------------------------------
@@ -347,7 +342,6 @@ void *resolverThread(void *arg){
 		/*CRITICAL SECTION
 ----------------------------------------------------------------------------------------------------
 		*/
-		printf("Resolver accessing shared array\n");
 		strcpy(ip_add, thread_object->shared_array[*thread_object->out]);		
 		
 		strcpy(thread_object->shared_array[*thread_object->out],"");

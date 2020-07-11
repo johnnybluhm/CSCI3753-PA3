@@ -1,0 +1,55 @@
+Scenario 1
+1 1
+Thread 165967616 serviced 5 files
+Time taken : 5828772 micro seconds
+Time taken : 6 seconds
+
+Scenario 2
+1 3
+Thread 2246149888 serviced 5 files
+Time taken : 1968805 micro seconds
+Time taken : 2 seconds
+
+Scenario 3
+3 1
+Thread 3540702976 serviced 1 files
+Thread 3557488384 serviced 2 files
+Thread 3549095680 serviced 2 files
+Time taken : 5810942 micro seconds
+Time taken : 6 seconds
+
+Scenario 4
+3 3
+Thread 2415916800 serviced 1 files
+Thread 2518836992 serviced 2 files
+Thread 2510444288 serviced 2 files
+Time taken : 1869930 micro seconds
+Time taken : 2 seconds
+
+Scenario 5
+5 5
+Thread 3212138240 serviced 1 files
+Thread 3195352832 serviced 1 files
+Thread 3178567424 serviced 1 files
+Thread 3186960128 serviced 1 files
+Thread 3203745536 serviced 1 files
+Time taken : 1520106 micro seconds
+Time taken : 1 seconds
+
+Scenario 6
+8 5
+Thread 1736435456 serviced 0 files
+Thread 1728042752 serviced 0 files
+Thread 1744828160 serviced 0 files
+Thread 1994389248 serviced 1 files
+Thread 1977603840 serviced 1 files
+Thread 1969211136 serviced 1 files
+Thread 1985996544 serviced 1 files
+Thread 1960818432 serviced 1 files
+Time taken : 1064385 micro seconds
+Time taken : 1 seconds
+
+
+
+
+
